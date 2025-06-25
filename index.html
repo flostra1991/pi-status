@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.5">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="de"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Raspberry Pi Status&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body { font-family: sans-serif; text-align: center; padding: 2em; max-width: 600px; margin: auto; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.status { font-size: 2em; margin: 1em 0; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.online { color: green; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.offline { color: red; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>ul { list-style: none; padding: 0; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>li { padding: 0.5em 0; border-bottom: 1px solid #ccc; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;🌐 Raspberry Pi Internetstatus&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="currentStatus" class="status"&gt;Lade...&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h2&gt;❌ Aussetzer – Letzte 3 Monate&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;ul id="outages"&gt;&lt;/ul&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const SUPABASE_URL = "https://iqnhzjyrvvxbskfnshll.supabase.co";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxbmh6anlydnZ4YnNrZm5zaGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NjI3NTUsImV4cCI6MjA2NjQzODc1NX0.m20HGkADSqXOcrA-wJyru5r185XvoZF9PyfTO-2fQfs";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>async function fetchData() {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const headers = {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>apikey: SUPABASE_API_KEY,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>Authorization: `Bearer ${SUPABASE_API_KEY}`</p>
+<p class="p1"><span class="Apple-converted-space">      </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const since = new Date();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>since.setMonth(since.getMonth() - 3);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const iso = since.toISOString();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const res = await fetch(`${SUPABASE_URL}/rest/v1/pings?timestamp=gte.${iso}&amp;select=timestamp,status&amp;order=timestamp.desc`, {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>headers</p>
+<p class="p1"><span class="Apple-converted-space">      </span>});</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const data = await res.json();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (data.length === 0) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById("currentStatus").textContent = "Keine Daten verfügbar";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const latest = data[0];</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const statusEl = document.getElementById("currentStatus");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (latest.status) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>statusEl.textContent = "✅ Online";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>statusEl.className = "status online";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>statusEl.textContent = "❌ Offline";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>statusEl.className = "status offline";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const outages = [];</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let inOutage = false;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let outageStart = null;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>for (let i = data.length - 1; i &gt;= 0; i--) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const entry = data[i];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (!entry.status &amp;&amp; !inOutage) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>inOutage = true;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>outageStart = new Date(entry.timestamp);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} else if (entry.status &amp;&amp; inOutage) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>inOutage = false;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const outageEnd = new Date(entry.timestamp);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>outages.push(`${outageStart.toLocaleString()} – ${outageEnd.toLocaleString()}`);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const list = document.getElementById("outages");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>outages.reverse().forEach(o =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const li = document.createElement("li");</p>
+<p class="p1"><span class="Apple-converted-space">        </span>li.textContent = o;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>list.appendChild(li);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>fetchData();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
