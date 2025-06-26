@@ -5,76 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Raspberry Pi Status</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 2em; max-width: 600px; margin: auto; }
-    .status { font-size: 2em; margin: 1em 0; }
-    .online { color: green; }
-    .offline { color: red; }
-    ul { list-style: none; padding: 0; }
-    li { padding: 0.5em 0; border-bottom: 1px solid #ccc; }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2em;
+      max-width: 600px;
+      margin: auto;
+    }
+    .status {
+      font-size: 2em;
+      margin: 1em 0;
+    }
+    .online {
+      color: green;
+    }
+    .offline {
+      color: red;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 0.5em 0;
+      border-bottom: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
   <h1>🌐 Raspberry Pi Internetstatus</h1>
-  <div id="currentStatus" class="status">Lade...</div>
+  <div id="currentStatus" class="status">⏳ Lade...</div>
   <h2>❌ Aussetzer – Letzte 3 Monate</h2>
   <ul id="outages"></ul>
 
   <script>
     const SUPABASE_URL = "https://iqnhzjyrvvxbskfnshll.supabase.co";
-    const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxbmh6anlydnZ4YnNrZm5zaGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NjI3NTUsImV4cCI6MjA2NjQzODc1NX0.m20HGkADSqXOcrA-wJyru5r185XvoZF9PyfTO-2fQfs";
+    const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxbmh6anlydnZ2eHNrZm5zaGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NjI3NTUsImV4cCI6MjA2NjQzODc1NX0.m20HGkADSqXOcrA-wJyru5r185XvoZF9PyfTO-2fQfs";
+
+    const headers = {
+      apikey: SUPABASE_API_KEY,
+      Authorization: `Bearer ${SUPABASE_API_KEY}`
+    };
 
     async function fetchData() {
-      const headers = {
-        apikey: SUPABASE_API_KEY,
-        Authorization: `Bearer ${SUPABASE_API_KEY}`
-      };
-
-      const since = new Date();
-      since.setMonth(since.getMonth() - 3);
-      const iso = since.toISOString();
-
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/pings?timestamp=gte.${iso}&select=timestamp,status&order=timestamp.desc`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/pings?select=timestamp,status&order=timestamp.desc`, {
         headers
       });
       const data = await res.json();
 
-      if (data.length === 0) {
-        document.getElementById("currentStatus").textContent = "Keine Daten verfügbar";
+      if (!data.length) {
+        document.getElementById("currentStatus").innerText = "❌ Keine Daten verfügbar";
         return;
       }
 
       const latest = data[0];
-      const statusEl = document.getElementById("currentStatus");
-      if (latest.status) {
-        statusEl.textContent = "✅ Online";
-        statusEl.className = "status online";
-      } else {
-        statusEl.textContent = "❌ Offline";
-        statusEl.className = "status offline";
-      }
+      const statusDiv = document.getElementById("currentStatus");
+      statusDiv.innerText = latest.status ? "✅ Online" : "🔴 Offline";
+      statusDiv.className = "status " + (latest.status ? "online" : "offline");
 
-      const outages = [];
-      let inOutage = false;
-      let outageStart = null;
-
-      for (let i = data.length - 1; i >= 0; i--) {
-        const entry = data[i];
-        if (!entry.status && !inOutage) {
-          inOutage = true;
-          outageStart = new Date(entry.timestamp);
-        } else if (entry.status && inOutage) {
-          inOutage = false;
-          const outageEnd = new Date(entry.timestamp);
-          outages.push(`${outageStart.toLocaleString()} – ${outageEnd.toLocaleString()}`);
-        }
-      }
-
+      // Aussetzer filtern: nur Zeiträume mit status = false
+      const outages = data.filter(entry => entry.status === false);
       const list = document.getElementById("outages");
-      outages.reverse().forEach(o => {
+
+      if (outages.length === 0) {
         const li = document.createElement("li");
-        li.textContent = o;
+        li.innerText = "Keine Aussetzer 🎉";
         list.appendChild(li);
-      });
+      } else {
+        outages.forEach(entry => {
+          const li = document.createElement("li");
+          const t = new Date(entry.timestamp);
+          li.innerText = `❌ Offline: ${t.toLocaleString("de-DE")}`;
+          list.appendChild(li);
+        });
+      }
     }
 
     fetchData();
