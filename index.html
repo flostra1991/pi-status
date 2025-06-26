@@ -35,12 +35,12 @@
 <body>
   <h1>🌐 Raspberry Pi Internetstatus</h1>
   <div id="currentStatus" class="status">⏳ Lade...</div>
-  <h2>❌ Aussetzer – Letzte 3 Monate</h2>
+  <h2>❌ Aussetzer (alle bisherigen)</h2>
   <ul id="outages"></ul>
 
   <script>
     const SUPABASE_URL = "https://iqnhzjyrvvxbskfnshll.supabase.co";
-    const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxbmh6anlydnZ2eHNrZm5zaGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NjI3NTUsImV4cCI6MjA2NjQzODc1NX0.m20HGkADSqXOcrA-wJyru5r185XvoZF9PyfTO-2fQfs";
+    const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxbmh6anlydnZ4YnNrZm5zaGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NjI3NTUsImV4cCI6MjA2NjQzODc1NX0.m20HGkADSqXOcrA-wJyru5r185XvoZF9PyfTO-2fQfs";
 
     const headers = {
       apikey: SUPABASE_API_KEY,
@@ -48,36 +48,55 @@
     };
 
     async function fetchData() {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/pings?select=timestamp,status&order=timestamp.desc`, {
-        headers
-      });
-      const data = await res.json();
-
-      if (!data.length) {
-        document.getElementById("currentStatus").innerText = "❌ Keine Daten verfügbar";
-        return;
-      }
-
-      const latest = data[0];
-      const statusDiv = document.getElementById("currentStatus");
-      statusDiv.innerText = latest.status ? "✅ Online" : "🔴 Offline";
-      statusDiv.className = "status " + (latest.status ? "online" : "offline");
-
-      // Aussetzer filtern: nur Zeiträume mit status = false
-      const outages = data.filter(entry => entry.status === false);
-      const list = document.getElementById("outages");
-
-      if (outages.length === 0) {
-        const li = document.createElement("li");
-        li.innerText = "Keine Aussetzer 🎉";
-        list.appendChild(li);
-      } else {
-        outages.forEach(entry => {
-          const li = document.createElement("li");
-          const t = new Date(entry.timestamp);
-          li.innerText = `❌ Offline: ${t.toLocaleString("de-DE")}`;
-          list.appendChild(li);
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/pings?select=timestamp,status&order=timestamp.desc`, {
+          headers
         });
+        const data = await res.json();
+
+        if (!data.length) {
+          document.getElementById("currentStatus").innerText = "❌ Keine Daten verfügbar";
+          return;
+        }
+
+        const latest = data[0];
+        const statusDiv = document.getElementById("currentStatus");
+        statusDiv.innerText = latest.status ? "✅ Online" : "🔴 Offline";
+        statusDiv.className = "status " + (latest.status ? "online" : "offline";
+
+        // Aussetzer anzeigen
+        const outages = [];
+        let inOutage = false;
+        let outageStart = null;
+
+        for (let i = data.length - 1; i >= 0; i--) {
+          const entry = data[i];
+          if (!entry.status && !inOutage) {
+            inOutage = true;
+            outageStart = new Date(entry.timestamp);
+          } else if (entry.status && inOutage) {
+            inOutage = false;
+            const outageEnd = new Date(entry.timestamp);
+            outages.push(`${outageStart.toLocaleString()} – ${outageEnd.toLocaleString()}`);
+          }
+        }
+
+        const list = document.getElementById("outages");
+        if (outages.length === 0) {
+          const li = document.createElement("li");
+          li.innerText = "Keine Aussetzer 🎉";
+          list.appendChild(li);
+        } else {
+          outages.reverse().forEach(o => {
+            const li = document.createElement("li");
+            li.textContent = o;
+            list.appendChild(li);
+          });
+        }
+
+      } catch (error) {
+        document.getElementById("currentStatus").innerText = "⚠️ Fehler beim Laden";
+        console.error("Fehler beim Laden von Supabase:", error);
       }
     }
 
